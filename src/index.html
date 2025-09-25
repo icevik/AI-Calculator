@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot Maliyet Hesaplayıcısı</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/header-tabs.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-robot"></i> AI Maliyet Hesaplayıcısı</h1>
+                <p class="subtitle" id="headerSubtitle">Farklı AI modellerinin maliyetlerini karşılaştırın ve en uygun seçimi yapın</p>
+            </div>
+            
+            <!-- Model Type Selector moved to header -->
+            <div class="header-model-selector">
+                <div class="model-type-tabs">
+                    <button class="model-tab active" onclick="switchModelType('generative')" data-mode="generative">
+                        <i class="fas fa-comments"></i>
+                        <span>Üretken Modeller</span>
+                        <small>Chat & Text Generation</small>
+                    </button>
+                    <button class="model-tab" onclick="switchModelType('embedding')" data-mode="embedding">
+                        <i class="fas fa-vector-square"></i>
+                        <span>Embedding Modeller</span>
+                        <small>Text Vectorization</small>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="currency-toggle">
+                <button id="currencyToggle" class="currency-btn">
+                    <span id="currencySymbol">₺</span> TL
+                </button>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Parametreler Bölümü -->
+            <section class="parameters-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cogs"></i> <span data-translate="parametersTitle">Hesaplama Parametreleri</span></h2>
+                    <button class="collapse-btn" onclick="toggleSection('parameters')">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </div>
+                <!-- Calculation mode (controlled by SmartComparison) -->
+                <input type="hidden" id="calcMode" value="generative" />
+
+                <!-- Chat/GPT style parameters -->
+                <div id="parameters" class="parameters-grid" style="display: grid;">
+                    <div class="parameter-card">
+                        <label for="dailyConversations">
+                            <i class="fas fa-comments"></i> <span data-translate="dailyConversations">Günlük Konuşma</span>
+                        </label>
+                        <input type="number" id="dailyConversations" value="70000" min="1">
+                        <span class="unit" data-translate="conversationsPerDay">konuşma/gün</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="messagesPerConv">
+                            <i class="fas fa-exchange-alt"></i> <span data-translate="messagesPerConv">Konuşma Başına Mesaj</span>
+                        </label>
+                        <input type="number" id="messagesPerConv" value="5" min="1">
+                        <span class="unit" data-translate="messages">mesaj</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="inputWords">
+                            <i class="fas fa-keyboard"></i> <span data-translate="inputWords">Girdi Kelime Sayısı</span>
+                        </label>
+                        <input type="number" id="inputWords" value="30" min="1">
+                        <span class="unit" data-translate="words">kelime</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="outputWords">
+                            <i class="fas fa-comment-dots"></i> <span data-translate="outputWords">Çıktı Kelime Sayısı</span>
+                        </label>
+                        <input type="number" id="outputWords" value="200" min="1">
+                        <span class="unit" data-translate="words">kelime</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="usdRate">
+                            <i class="fas fa-dollar-sign"></i> <span data-translate="usdRate">USD/TL Kuru</span>
+                        </label>
+                        <input type="number" id="usdRate" value="42" min="1" step="0.01">
+                        <span class="unit" data-translate="tl">TL</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="daysPerYear">
+                            <i class="fas fa-calendar-alt"></i> <span data-translate="daysPerYear">Yıllık Gün Sayısı</span>
+                        </label>
+                        <input type="number" id="daysPerYear" value="365" min="1">
+                        <span class="unit" data-translate="days">gün</span>
+                    </div>
+                </div>
+
+                <!-- Embedding parameters -->
+                <div id="embeddingParameters" class="parameters-grid" style="display: none;">
+                    <div class="parameter-card">
+                        <label for="embeddingWords">
+                            <i class="fas fa-font"></i> <span data-translate="embeddingWords">Kelime Sayısı (Örn: 1,000,000)</span>
+                        </label>
+                        <input type="number" id="embeddingWords" value="1000000" min="0">
+                        <span class="unit" data-translate="words">kelime</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="embeddingTokens">
+                            <i class="fas fa-coins"></i> <span data-translate="embeddingTokens">Token (opsiyonel)</span>
+                        </label>
+                        <input type="number" id="embeddingTokens" value="0" min="0">
+                        <span class="unit">token</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="embeddingPeriod">
+                            <i class="fas fa-calendar-alt"></i> <span data-translate="embeddingPeriod">Dönem</span>
+                        </label>
+                        <select id="embeddingPeriod">
+                            <option value="daily" data-translate="embeddingPeriodDaily">Günlük</option>
+                            <option value="monthly" data-translate="embeddingPeriodMonthly">Aylık</option>
+                            <option value="yearly" data-translate="embeddingPeriodYearly">Yıllık</option>
+                        </select>
+                        <span class="unit">dönem</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="usdRate-embed">
+                            <i class="fas fa-dollar-sign"></i> <span data-translate="usdRate">USD/TL Kuru</span>
+                        </label>
+                        <input type="number" id="usdRate-embed" value="42" min="1" step="0.01">
+                        <span class="unit" data-translate="tl">TL</span>
+                    </div>
+                    <div class="parameter-card">
+                        <label for="daysPerYear-embed">
+                            <i class="fas fa-calendar-alt"></i> <span data-translate="daysPerYear">Yıllık Gün Sayısı</span>
+                        </label>
+                        <input type="number" id="daysPerYear-embed" value="365" min="1">
+                        <span class="unit" data-translate="days">gün</span>
+                    </div>
+                    <div class="parameter-card" style="grid-column: 1 / -1; opacity: 0.8;">
+                        <small>
+                            <span data-translate="embeddingNote">Not: Token alanı 0 ise, kelime sayısı yaklaşık 1.33 ile çarpılarak token hesaplanır. Fiyatlar 1M token başınadır.</span>
+                        </small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Senaryo Modal -->
+            <div id="scenarioModal" class="modal-overlay" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true">
+                <div class="modal-window" role="document">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-calculator"></i> <span data-translate="scenarioTitle">Senaryo Hesaplayıcısı</span></h3>
+                        <button class="modal-close" aria-label="Kapat" onclick="closeScenarioModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="scenarioCalculator" class="scenario-calculator">
+                            <div class="scenario-input-section">
+                                <h3><i class="fas fa-question-circle"></i> <span data-translate="scenarioSubtitle">"Günde X konuşma olursa ne kadar maliyet olur?"</span></h3>
+                                <div class="scenario-inputs">
+                                    <div class="input-group">
+                                        <label for="scenarioConversations" data-translate="scenarioConversations">Günlük Konuşma Sayısı</label>
+                                        <input type="number" id="scenarioConversations" value="5000" min="1" max="1000000">
+                                        <span class="input-hint" data-translate="inputHintExamples">Örn: 5.000, 10.000, 50.000</span>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="scenarioMessages" data-translate="scenarioMessages">Konuşma Başına Mesaj</label>
+                                        <input type="number" id="scenarioMessages" value="5" min="1" max="100">
+                                        <span class="input-hint" data-translate="inputHintAvgMessages">Ortalama mesaj sayısı</span>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="scenarioInputWords" data-translate="scenarioInputWords">Girdi Kelime Sayısı</label>
+                                        <input type="number" id="scenarioInputWords" value="30" min="1" max="10000">
+                                        <span class="input-hint" data-translate="inputHintAvgPerMessage">Mesaj başına ortalama</span>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="scenarioOutputWords" data-translate="scenarioOutputWords">Çıktı Kelime Sayısı</label>
+                                        <input type="number" id="scenarioOutputWords" value="200" min="1" max="10000">
+                                        <span class="input-hint">Mesaj başına ortalama</span>
+                                    </div>
+                                    <div class="input-group">
+                                        <button id="calculateScenario" class="calculate-btn">
+                                            <i class="fas fa-play"></i> <span data-translate="scenarioCalculate">Hesapla</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="scenarioResults" class="scenario-results" style="display: none;">
+                                <h3><i class="fas fa-chart-line"></i> <span data-translate="scenarioResults">Senaryo Sonuçları</span></h3>
+                                <div class="scenario-summary">
+                                    <div class="scenario-stat">
+                                        <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                                        <div class="stat-content">
+                                            <span class="stat-number" id="scenarioTotalConversations">5.000</span>
+                                            <span class="stat-label" data-translate="scenarioTotalConversations">Günlük Konuşma</span>
+                                        </div>
+                                    </div>
+                                    <div class="scenario-stat">
+                                        <div class="stat-icon"><i class="fas fa-envelope"></i></div>
+                                        <div class="stat-content">
+                                            <span class="stat-number" id="scenarioTotalMessages">25.000</span>
+                                            <span class="stat-label" data-translate="scenarioTotalMessages">Günlük Mesaj</span>
+                                        </div>
+                                    </div>
+                                    <div class="scenario-stat">
+                                        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                                        <div class="stat-content">
+                                            <span class="stat-number" id="scenarioTotalTokens">7.5M</span>
+                                            <span class="stat-label" data-translate="scenarioTotalTokens">Günlük Token</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="scenarioComparison" class="scenario-comparison">
+                                    <!-- Senaryo karşılaştırma tablosu buraya gelecek -->
+                                </div>
+                                
+                                <div class="scenario-insights">
+                                    <h4><i class="fas fa-lightbulb"></i> <span data-translate="scenarioInsights">Akıllı Öneriler</span></h4>
+                                    <div id="scenarioInsights" class="insights-content">
+                                        <!-- Akıllı öneriler buraya gelecek -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Pricing Side Panel -->
+                    <div id="pricingPanel" class="pricing-panel" aria-hidden="true">
+                        <div class="pricing-header">
+                            <div class="pricing-title"><i class="fas fa-tags"></i> <span data-translate="pricingTitle">Fiyatlandırma</span></div>
+                            <button id="pricingCloseBtn" class="pricing-close" aria-label="Kapat">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="pricing-body">
+                            <div class="pricing-input-group">
+                                <label for="pricingModelName" data-translate="pricingModel">Model</label>
+                                <input id="pricingModelName" class="pricing-input" type="text" disabled>
+                            </div>
+                            <div class="pricing-input-group">
+                                <label for="pricingMargin" data-translate="pricingMargin">Kar Yüzdesi (%)</label>
+                                <input id="pricingMargin" class="pricing-input" type="number" min="0" max="1000" step="0.5" value="30">
+                            </div>
+
+                            <div class="kpi-grid">
+                                <div class="kpi-card">
+                                    <h5 data-translate="costDaily">Maliyet (Günlük)</h5>
+                                    <div class="kpi-value" id="kpiDailyCost">-</div>
+                                    <div class="kpi-sub" id="kpiDailyCostRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="priceDaily">Satış (Günlük)</h5>
+                                    <div class="kpi-value" id="kpiDailyPrice">-</div>
+                                    <div class="kpi-add" id="kpiDailyAdd">&nbsp;</div>
+                                    <div class="kpi-sub" id="kpiDailyPriceRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="costMonthly">Maliyet (Aylık)</h5>
+                                    <div class="kpi-value" id="kpiMonthlyCost">-</div>
+                                    <div class="kpi-sub" id="kpiMonthlyCostRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="priceMonthly">Satış (Aylık)</h5>
+                                    <div class="kpi-value" id="kpiMonthlyPrice">-</div>
+                                    <div class="kpi-add" id="kpiMonthlyAdd">&nbsp;</div>
+                                    <div class="kpi-sub" id="kpiMonthlyPriceRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="costYearly">Maliyet (Yıllık)</h5>
+                                    <div class="kpi-value" id="kpiYearlyCost">-</div>
+                                    <div class="kpi-sub" id="kpiYearlyCostRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="priceYearly">Satış (Yıllık)</h5>
+                                    <div class="kpi-value" id="kpiYearlyPrice">-</div>
+                                    <div class="kpi-add" id="kpiYearlyAdd">&nbsp;</div>
+                                    <div class="kpi-sub" id="kpiYearlyPriceRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="costPerConv">Maliyet (Konuşma Başına)</h5>
+                                    <div class="kpi-value" id="kpiPerConvCost">-</div>
+                                    <div class="kpi-sub" id="kpiPerConvCostRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="pricePerConv">Satış (Konuşma Başına)</h5>
+                                    <div class="kpi-value" id="kpiPerConvPrice">-</div>
+                                    <div class="kpi-add" id="kpiPerConvAdd">&nbsp;</div>
+                                    <div class="kpi-sub" id="kpiPerConvPriceRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="costPerMsg">Maliyet (Mesaj Başına)</h5>
+                                    <div class="kpi-value" id="kpiPerMsgCost">-</div>
+                                    <div class="kpi-sub" id="kpiPerMsgCostRead">&nbsp;</div>
+                                </div>
+                                <div class="kpi-card">
+                                    <h5 data-translate="pricePerMsg">Satış (Mesaj Başına)</h5>
+                                    <div class="kpi-value" id="kpiPerMsgPrice">-</div>
+                                    <div class="kpi-add" id="kpiPerMsgAdd">&nbsp;</div>
+                                    <div class="kpi-sub" id="kpiPerMsgPriceRead">&nbsp;</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h5 style="margin-bottom:8px;color:var(--text-secondary);" data-translate="pricingSuggestions">Akıllı Öneriler</h5>
+                                <div id="pricingSuggestions" class="insights-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Özet İstatistikler - Üretken Modeller -->
+            <section id="generativeStats" class="stats-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Hesaplama Özeti (Üretken Modeller)</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="totalMessages">350,000</span>
+                            <span class="stat-label">Günlük Toplam Mesaj</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="totalConversations">70,000</span>
+                            <span class="stat-label">Günlük Konuşma</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-keyboard"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="avgInputWords">30</span>
+                            <span class="stat-label">Ortalama Girdi Kelimesi</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-comment-dots"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="avgOutputWords">200</span>
+                            <span class="stat-label">Ortalama Çıktı Kelimesi</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Özet İstatistikler - Embedding Modeller -->
+            <section id="embeddingStats" class="stats-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-vector-square"></i> Embedding Hesaplama Özeti</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-font"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="embeddingWordsCount">1.0M</span>
+                            <span class="stat-label">Toplam Kelime</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="embeddingTokensCount">1.33M</span>
+                            <span class="stat-label">Toplam Token</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="embeddingPeriodDisplay">Günlük</span>
+                            <span class="stat-label">Seçili Dönem</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-calculator"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-number" id="embeddingDailyTokens">1.33M</span>
+                            <span class="stat-label">Günlük Token (Hesap İçin)</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Akıllı Fiyat Karşılaştırması -->
+            <section class="smart-comparison-section">
+                <div class="section-header">
+                    <h2 id="comparisonTitle"><i class="fas fa-microscope"></i> Akıllı Fiyat Karşılaştırması - Üretken Modeller</h2>
+                    <div class="comparison-controls">
+                        <div class="filter-group">
+                            <select id="sortBy" class="smart-select">
+                                <option value="yearly">Yıllık Maliyet</option>
+                                <option value="monthly">Aylık Maliyet</option>
+                                <option value="perMessage">Mesaj Başına</option>
+                                <option value="efficiency">Verimlilik Skoru</option>
+                            </select>
+                            <select id="filterBy" class="smart-select">
+                                <option value="all">Tüm Sağlayıcılar</option>
+                                <option value="OpenAI">OpenAI</option>
+                                <option value="Google">Google</option>
+                                <option value="Anthropic">Anthropic</option>
+                            </select>
+                        </div>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" data-view="grid" onclick="switchComparisonView('grid')">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                            <button class="toggle-btn" data-view="list" onclick="switchComparisonView('list')">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="toggle-btn" data-view="chart" onclick="switchComparisonView('chart')">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Grid View -->
+                <div id="comparisonGrid" class="comparison-grid">
+                    <!-- Cards will be populated by JavaScript -->
+                </div>
+
+                <!-- Comparison List View -->
+                <div id="comparisonList" class="comparison-list" style="display: none;">
+                    <div class="list-header">
+                        <div class="model-col" data-translate="model">Model</div>
+                        <div class="price-col" data-translate="pricing">Fiyatlandırma</div>
+                        <div class="cost-col" data-translate="cost">Maliyet</div>
+                        <div class="efficiency-col" data-translate="efficiency">Verimlilik</div>
+                        <div class="action-col" data-translate="actions">Aksiyonlar</div>
+                    </div>
+                    <div id="comparisonListItems" class="list-items">
+                        <!-- Items will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Comparison Chart View -->
+                <div id="comparisonChart" class="comparison-chart" style="display: none;">
+                    <div class="chart-controls">
+                        <div class="chart-type-selector">
+                            <button class="chart-type-btn active" data-type="bar" onclick="changeChartType('bar')">
+                                <i class="fas fa-chart-bar"></i> <span data-translate="bar">Bar</span>
+                            </button>
+                            <button class="chart-type-btn" data-type="radar" onclick="changeChartType('radar')">
+                                <i class="fas fa-chart-area"></i> <span data-translate="radar">Radar</span>
+                            </button>
+                            <button class="chart-type-btn" data-type="scatter" onclick="changeChartType('scatter')">
+                                <i class="fas fa-braille"></i> <span data-translate="scatter">Scatter</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="smartChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Senaryo Hesaplayıcısı (Modal Tetikleyici) -->
+            <section class="scenario-calculator-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-calculator"></i> <span data-translate="scenarioTitle">Senaryo Hesaplayıcısı</span></h2>
+                    <div class="section-actions">
+                        <button id="openScenarioModal" class="calculate-btn">
+                            <i class="fas fa-window-restore"></i> <span data-translate="openScenario">Senaryo Aç</span>
+                        </button>
+                    </div>
+                </div>
+                <p class="section-desc" data-translate="scenarioSectionDesc">Günlük konuşma hacmine göre maliyeti modal pencerede analiz edin. Aşağıdaki içerikler sizi bekliyor:</p>
+                <div class="scenario-overview">
+                    <div class="ov-item">
+                        <div class="ov-icon"><i class="fas fa-sliders-h"></i></div>
+                        <div class="ov-content">
+                            <strong data-translate="scenarioOverviewDesc1">Özel Senaryo Girişi</strong>
+                            <div class="ov-desc" data-translate="scenarioOverviewDesc1Detail">Günlük konuşma, konuşma başına mesaj, girdi/çıktı kelime sayısı.</div>
+                        </div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-icon"><i class="fas fa-coins"></i></div>
+                        <div class="ov-content">
+                            <strong data-translate="scenarioOverviewDesc2">Maliyet Çıktıları</strong>
+                            <div class="ov-desc" data-translate="scenarioOverviewDesc2Detail">Günlük, Aylık, Yıllık; Konuşma ve Mesaj başına tutarlar.</div>
+                        </div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-icon"><i class="fas fa-table"></i></div>
+                        <div class="ov-content">
+                            <strong data-translate="scenarioOverviewDesc3">Top 5 Model Tablosu</strong>
+                            <div class="ov-desc" data-translate="scenarioOverviewDesc3Detail">En uygun 5 modelin karşılaştırması ve tıklanabilir okunuşlar.</div>
+                        </div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-icon"><i class="fas fa-lightbulb"></i></div>
+                        <div class="ov-content">
+                            <strong data-translate="scenarioOverviewDesc4">Akıllı Öneriler</strong>
+                            <div class="ov-desc" data-translate="scenarioOverviewDesc4Detail">Hacim, tasarruf, token verimliliği ve sağlayıcı çeşitliliği tespitleri.</div>
+                        </div>
+                    </div>
+                    <div class="ov-item">
+                        <div class="ov-icon"><i class="fas fa-tags"></i></div>
+                        <div class="ov-content">
+                            <strong data-translate="scenarioOverviewDesc5">Fiyatlandırma (Kârlılık)</strong>
+                            <div class="ov-desc" data-translate="scenarioOverviewDesc5Detail">Kar yüzdesi ekleyin; satış fiyatı (gün/ay/yıl) ve konuşma/mesaj başına ücretleri görün.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Selector & Head-to-Head Comparison -->
+            <section class="head-to-head-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> <span data-translate="headToHeadTitle">Direkt Karşılaştırma</span></h2>
+                </div>
+                <div class="model-selector">
+                    <div class="selector-group">
+                        <label data-translate="modelA">Model A</label>
+                        <select id="modelA" class="model-select">
+                            <!-- Options populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="vs-indicator">
+                        <i class="fas fa-bolt"></i>
+                        <span data-translate="vs">VS</span>
+                    </div>
+                    <div class="selector-group">
+                        <label data-translate="modelB">Model B</label>
+                        <select id="modelB" class="model-select">
+                            <!-- Options populated by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+                <div id="headToHeadResults" class="head-to-head-results">
+                    <!-- Results populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Smart Recommendations -->
+            <section class="recommendations-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-lightbulb"></i> <span data-translate="recommendationsTitle">Akıllı Öneriler</span></h2>
+                </div>
+                <div id="smartRecommendations" class="recommendations-grid">
+                    <!-- Recommendations populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Legacy Table View (Hidden by default) -->
+            <section class="comparison-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-balance-scale"></i> <span data-translate="legacyComparisonTitle">Model Karşılaştırması</span></h2>
+                    <div class="view-controls">
+                        <button class="view-btn active" data-view="table" onclick="switchView('table')">
+                            <i class="fas fa-table"></i> <span data-translate="table">Tablo</span>
+                        </button>
+                        <button class="view-btn" data-view="chart" onclick="switchView('chart')">
+                            <i class="fas fa-chart-bar"></i> <span data-translate="chart">Grafik</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tableView" class="table-container">
+                    <div class="table-wrapper">
+                        <table class="cost-table">
+                            <thead>
+                                <tr>
+                                    <th class="model-column" data-translate="model">Model</th>
+                                    <th data-translate="daily">Günlük</th>
+                                    <th data-translate="monthly">Aylık</th>
+                                    <th data-translate="yearly">Yıllık</th>
+                                    <th data-translate="perConversation">Konuşma Başına</th>
+                                    <th data-translate="perMessage">Mesaj Başına</th>
+                                    <th data-translate="pricing">Fiyatlandırma</th>
+                                </tr>
+                            </thead>
+                            <tbody id="costTableBody">
+                                <!-- Veriler JavaScript ile doldurulacak -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="chartView" class="chart-container" style="display: none;">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </section>
+
+            <!-- En İyi/Kötü Analizi -->
+            <section class="analysis-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-lightbulb"></i> Detaylı Analiz</h2>
+                </div>
+                <div class="analysis-grid">
+                    <div class="analysis-card best">
+                        <div class="card-header">
+                            <i class="fas fa-trophy"></i>
+                            <h3>En Ekonomik Model</h3>
+                        </div>
+                        <div class="card-content" id="bestModel">
+                            <!-- JavaScript ile doldurulacak -->
+                        </div>
+                    </div>
+                    <div class="analysis-card worst">
+                        <div class="card-header">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>En Pahalı Model</h3>
+                        </div>
+                        <div class="card-content" id="worstModel">
+                            <!-- JavaScript ile doldurulacak -->
+                        </div>
+                    </div>
+                    <div class="analysis-card savings">
+                        <div class="card-header">
+                            <i class="fas fa-piggy-bank"></i>
+                            <h3>Tasarruf Fırsatı</h3>
+                        </div>
+                        <div class="card-content" id="savingsAnalysis">
+                            <!-- JavaScript ile doldurulacak -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Muhtaç olduğun kudret, damarlarındaki asil kanda mevcuttur. M. Kemal Atatürk</p>
+        </footer>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>

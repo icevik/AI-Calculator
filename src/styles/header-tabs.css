@@ -1,0 +1,155 @@
+/* Header Model Type Tabs */
+.header-model-selector {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.model-type-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 4px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.model-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 160px;
+  position: relative;
+  overflow: hidden;
+}
+
+.model-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.model-tab.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.model-tab.active::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4f46e5, #06b6d4);
+  border-radius: 3px;
+}
+
+.model-tab i {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.model-tab span {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.model-tab small {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.model-tab.active small {
+  opacity: 1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .model-type-tabs {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .model-tab {
+    min-width: auto;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  
+  .model-tab:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* Header adjustments for new tabs */
+.header {
+  padding-bottom: 1rem;
+}
+
+.header-content {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.currency-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+/* Smooth transitions for content switching */
+.parameters-section,
+.stats-section {
+  transition: all 0.3s ease;
+}
+
+/* Add subtle animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.model-tab.active {
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Visual feedback for mode changes */
+.section-header h2 {
+  transition: all 0.3s ease;
+}
+
+#comparisonTitle {
+  position: relative;
+}
+
+#comparisonTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #06b6d4);
+  transition: width 0.3s ease;
+}
+
+#comparisonTitle.updated::after {
+  width: 100%;
+}

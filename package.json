@@ -1,0 +1,35 @@
+{
+  "name": "iskendercevik",
+  "version": "1.0.0",
+  "description": "Professional AI model cost calculator with interactive interface",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext js,jsx,ts,tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "keywords": [
+    "ai",
+    "cost-calculator",
+    "openai",
+    "claude",
+    "gemini",
+    "chatbot",
+    "pricing"
+  ],
+  "author": "iskendercevik",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "vite": "^5.1.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1"
+  }
+}
